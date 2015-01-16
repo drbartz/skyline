@@ -95,6 +95,7 @@ class Analyzer(Thread):
 
                 # If it's anomalous, add it to list
                 if anomalous:
+                    logger.info(traceback.format_exc())
                     base_name = metric_name.replace(settings.FULL_NAMESPACE, '', 1)
                     metric = [datapoint, base_name]
                     self.anomalous_metrics.append(metric)
@@ -190,6 +191,7 @@ class Analyzer(Thread):
             # Send alerts
             if settings.ENABLE_ALERTS:
                 for alert in settings.ALERTS:
+                    logger.info("send alert: %s" % str(self.anomalous_metrics))
                     for metric in self.anomalous_metrics:
                         if alert[0] in metric[1]:
                             cache_key = 'last_alert.%s.%s' % (alert[1], metric[1])
@@ -221,6 +223,7 @@ class Analyzer(Thread):
             # Log to Graphite
             self.send_graphite_metric('skyline.analyzer.run_time', '%.2f' % (time() - now))
             self.send_graphite_metric('skyline.analyzer.total_analyzed', '%.2f' % (len(unique_metrics) - sum(exceptions.values())))
+            self.send_graphite_metric('skyline.analyzer.anomalies', '%d' % len(self.anomalous_metrics))
 
             # Check canary metric
             raw_series = self.redis_conn.get(settings.FULL_NAMESPACE + settings.CANARY_METRIC)
