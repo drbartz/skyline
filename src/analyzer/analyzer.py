@@ -46,8 +46,11 @@ class Analyzer(Thread):
 
     def send_graphite_metric(self, name, value):
         if settings.GRAPHITE_HOST != '':
+            if settings.GRAPHITE_PREFIX: 
+					name=settings.GRAPHITE_PREFIX+"."+socket.gethostname()+"."+name
             sock = socket.socket()
             sock.connect((settings.GRAPHITE_HOST, settings.CARBON_PORT))
+            #logger.debug('send to graphite: %s %s %i\n' % (name, value, time()))
             sock.sendall('%s %s %i\n' % (name, value, time()))
             sock.close()
             return True
@@ -117,7 +120,7 @@ class Analyzer(Thread):
                 exceptions['Boring'] += 1
             except:
                 exceptions['Other'] += 1
-                logger.info(traceback.format_exc())
+                #logger.info(traceback.format_exc())
 
         # Add values to the queue so the parent process can collate
         for key, value in anomaly_breakdown.items():
@@ -223,7 +226,9 @@ class Analyzer(Thread):
             # Log to Graphite
             self.send_graphite_metric('skyline.analyzer.run_time', '%.2f' % (time() - now))
             self.send_graphite_metric('skyline.analyzer.total_analyzed', '%.2f' % (len(unique_metrics) - sum(exceptions.values())))
-            self.send_graphite_metric('skyline.analyzer.anomalies', '%d' % len(self.anomalous_metrics))
+            self.send_graphite_metric('skyline.analyzer.anomalies', '%.2f' % len(self.anomalous_metrics))
+            for name in exceptions:
+                self.send_graphite_metric('skyline.analyzer.exception.%s' % name, '%.2f' % exceptions[name])
 
             # Check canary metric
             raw_series = self.redis_conn.get(settings.FULL_NAMESPACE + settings.CANARY_METRIC)
