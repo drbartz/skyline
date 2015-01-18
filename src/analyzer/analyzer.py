@@ -194,7 +194,7 @@ class Analyzer(Thread):
             # Send alerts
             if settings.ENABLE_ALERTS:
                 for alert in settings.ALERTS:
-                    logger.info("send alert: %s" % str(self.anomalous_metrics))
+                    if len(self.anomalous_metrics) > 0: logger.info("send alert: %s" % str(self.anomalous_metrics))
                     for metric in self.anomalous_metrics:
                         if alert[0] in metric[1]:
                             cache_key = 'last_alert.%s.%s' % (alert[1], metric[1])

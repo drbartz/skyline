@@ -47,6 +47,8 @@ class Worker(Process):
 
     def send_graphite_metric(self, name, value):
         if settings.GRAPHITE_HOST != '':
+            if settings.GRAPHITE_PREFIX: 
+                name=settings.GRAPHITE_PREFIX+"."+socket.gethostname()+"."+name
             sock = socket.socket()
             sock.connect((settings.GRAPHITE_HOST, settings.CARBON_PORT))
             sock.sendall('%s %s %i\n' % (name, value, time()))
